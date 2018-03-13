@@ -2,7 +2,7 @@
 # tensorflow中集合的运用:损失集合
 # 计算一个5层神经网络带L2正则化的损失函数
 import tensorflow as tf
-import tensorflow.contrib.layers as tflayers
+from tensorflow.contrib import layers as tflayers
 from numpy.random import RandomState
 
 
