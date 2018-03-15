@@ -71,10 +71,10 @@ class Data(object):
 
     def load_origin_image(self, filename):
         image = cv2.imread(filename)
-        #        self.counter += 1
+        # self.counter += 1
 
-        #        print(self.counter)
-        #        print(image.shape)
+        # print(self.counter)
+        # print(image.shape)
         return np.array(image)
 
 
@@ -85,9 +85,7 @@ class Data(object):
     def load_label(self, filename):
         label = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
 
-        [h,
-         w] = [label.shape[0],
-               label.shape[1]]  # 
+        [h, w] = [label.shape[0], label.shape[1]]
         label_ = np.zeros(shape=[h, w, self.class_number], dtype=np.int32)
         for i in range(self.class_number):
             label_[:, :, i] = label == i
@@ -110,6 +108,6 @@ class Data(object):
         if flag == 'train' or flag == 'valid':
             imgs = self.load_images(flag)
             labs = self.load_labels(flag)
-            #            print('imgs: ',imgs.shape)
-            #            print('labs: ',labs.shape)
+            #  print('imgs: ',imgs.shape)
+            #  print('labs: ',labs.shape)
             return imgs, labs
