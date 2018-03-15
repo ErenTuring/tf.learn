@@ -8,7 +8,7 @@ Created on Tue Nov 14 10:55:45 2017
 
 import tensorflow as tf
 # import numpy as np
-import fcn
+import nets
 import batch_Data
 
 
@@ -81,7 +81,7 @@ def main():
     valid_list_path = r'/home/leilei/ISPRS_data_3/valid.txt'
     batch_size = 8
     img_size = 256
-    max_iter = 40001
+    max_iter = 1000  # 40001
     learning_rate = 1e-3
     class_number = 3
     ''' batch_data params '''
@@ -100,7 +100,7 @@ def main():
     is_training = tf.placeholder(tf.bool, name='is_training')
 
     with tf.name_scope('model'):
-        fcn1 = fcn.Model(dataset_mean_vector)
+        fcn1 = nets.Model(dataset_mean_vector)
         fcn1.build(image, class_number, is_training)
 
         tf.add_to_collection('new_score_1', fcn1.new_score_1)
