@@ -11,6 +11,8 @@ from math import ceil
 import numpy as np
 from tensorflow.contrib import layers as tfclayers  # xavier_initializer
 
+log_dir = r' '
+
 
 class Model:
     ''' all layers need to be initializer '''
@@ -20,102 +22,130 @@ class Model:
         self.epsilon = tf.constant(value=1e-4)
         # self.mean_vector = dataset_mean_vector
 
+    def variable_summaries(var):
+        """
+        Attach a lot of summaries to a Tensor
+        (for TensorBoard visualization).
+        """
+        with tf.name_scope('summaries'):
+            # 计算参数的均值，并使用tf.summary.scaler记录
+            mean = tf.reduce_mean(var)
+            tf.summary.scalar('mean', mean)
+
+            # 计算参数的标准差
+            with tf.name_scope('stddev'):
+                stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+            # 使用tf.summary.scaler记录记录下标准差，最大值，最小值
+            tf.summary.scalar('stddev', stddev)
+            tf.summary.scalar('max', tf.reduce_max(var))
+            tf.summary.scalar('min', tf.reduce_min(var))
+            # 用直方图记录参数的分布
+            tf.summary.histogram('histogram', var)
+
     def conv(self, bottom, ksize, is_training, name):
         ''' conv layer bn then activation '''
-        with tf.variable_scope(name):
-            weights = tf.get_variable(
-                'weights',
-                shape=ksize,
-                dtype=tf.float32,
-                initializer=tfclayers.xavier_initializer())
-            # xavier_initializer: Var(w) = 2 / (n_in + n_out)
-            biases = tf.get_variable(
-                'biases',
-                shape=[ksize[-1]],
-                dtype=tf.float32,
-                initializer=tf.constant_initializer(0.0))
-            output = tf.nn.conv2d(
-                bottom, filter=weights, strides=[1, 1, 1, 1], padding='SAME')
-            output = tf.nn.bias_add(output, biases)
-            # bn
-            output = tfclayers.batch_norm(
-                output, center=True, scale=True, is_training=is_training)
-            output = tf.nn.relu(output)
-            return output
+        with tf.name_scope('conv_layer'):
+            with tf.variable_scope(name):
+                weights = tf.get_variable(
+                    'weights',
+                    shape=ksize,
+                    dtype=tf.float32,
+                    initializer=tfclayers.xavier_initializer())
+                # xavier_initializer: Var(w) = 2 / (n_in + n_out)
+                biases = tf.get_variable(
+                    'biases',
+                    shape=[ksize[-1]],
+                    dtype=tf.float32,
+                    initializer=tf.constant_initializer(0.0))
+                output = tf.nn.conv2d(
+                    bottom,
+                    filter=weights,
+                    strides=[1, 1, 1, 1],
+                    padding='SAME')
+                output = tf.nn.bias_add(output, biases)
+                # bn
+                output = tfclayers.batch_norm(
+                    output, center=True, scale=True, is_training=is_training)
+                output = tf.nn.relu(output)
+                return output
 
     def max_pool(self, bottom, name):
-        with tf.variable_scope(name):
-            output = tf.nn.max_pool(
-                bottom,
-                ksize=[1, 2, 2, 1],
-                strides=[1, 2, 2, 1],
-                padding='SAME',
-                name=name)
-            return output
+        with tf.name_scope('pool(max)_layer'):
+            with tf.variable_scope(name):
+                output = tf.nn.max_pool(
+                    bottom,
+                    ksize=[1, 2, 2, 1],
+                    strides=[1, 2, 2, 1],
+                    padding='SAME',
+                    name=name)
+                return output
 
     def upsample(self, bottom, shape, num_outputs, ksize, stride, name):
         ''' initialize upsample '''
-        with tf.variable_scope(name):
-            strides = [1, stride, stride, 1]
-            num_filters_in = bottom.get_shape()[-1].value
-            kernel_shape = [ksize, ksize, num_outputs, num_filters_in]
-            output_shape = tf.stack(
-                [shape[0], shape[1], shape[2], num_outputs])
-            weights = tf.get_variable('weights', kernel_shape, tf.float32,
-                                      tfclayers.xavier_initializer())
-            upsample = tf.nn.conv2d_transpose(
-                bottom,
-                filter=weights,
-                output_shape=output_shape,
-                strides=strides,
-                padding='SAME',
-                name=name)
-            return upsample
+        with tf.name_scope('upsample_layer'):
+            with tf.variable_scope(name):
+                strides = [1, stride, stride, 1]
+                num_filters_in = bottom.get_shape()[-1].value
+                kernel_shape = [ksize, ksize, num_outputs, num_filters_in]
+                output_shape = tf.stack(
+                    [shape[0], shape[1], shape[2], num_outputs])
+                weights = tf.get_variable('weights', kernel_shape, tf.float32,
+                                          tfclayers.xavier_initializer())
+                upsample = tf.nn.conv2d_transpose(
+                    bottom,
+                    filter=weights,
+                    output_shape=output_shape,
+                    strides=strides,
+                    padding='SAME',
+                    name=name)
+                return upsample
 
     def deconv(self, bottom, shape, num_outputs, ksize, stride, name):
         ''' bilinear interpolation '''
-        with tf.variable_scope(name):
-            strides = [1, stride, stride, 1]
-            num_filters_in = bottom.get_shape()[-1].value
-            if shape is None:
-                in_shape = tf.shape(bottom)
-                h = ((in_shape[1] - 1) * stride) + 1
-                w = ((in_shape[2] - 1) * stride) + 1
-                new_shape = [in_shape[0], h, w, num_outputs]
-            else:
-                new_shape = [shape[0], shape[1], shape[2], num_outputs]
-            output_shape = tf.stack(new_shape)
-            weights_shape = [ksize, ksize, num_outputs, num_filters_in]
-            weights = self.deconv_weight_variable(weights_shape)
-            deconv = tf.nn.conv2d_transpose(
-                bottom,
-                filter=weights,
-                output_shape=output_shape,
-                strides=strides,
-                padding='SAME',
-                name=name)
-            return deconv
+        with tf.name_scope('deconv_layer'):
+            with tf.variable_scope(name):
+                strides = [1, stride, stride, 1]
+                num_filters_in = bottom.get_shape()[-1].value
+                if shape is None:
+                    in_shape = tf.shape(bottom)
+                    h = ((in_shape[1] - 1) * stride) + 1
+                    w = ((in_shape[2] - 1) * stride) + 1
+                    new_shape = [in_shape[0], h, w, num_outputs]
+                else:
+                    new_shape = [shape[0], shape[1], shape[2], num_outputs]
+                output_shape = tf.stack(new_shape)
+                weights_shape = [ksize, ksize, num_outputs, num_filters_in]
+                weights = self.deconv_weight_variable(weights_shape)
+                deconv = tf.nn.conv2d_transpose(
+                    bottom,
+                    filter=weights,
+                    output_shape=output_shape,
+                    strides=strides,
+                    padding='SAME',
+                    name=name)
+                return deconv
 
     def deconv_weight_variable(self, weights_shape):
-        height = weights_shape[0]
-        width = weights_shape[1]
-        f = ceil(height / 2.0)
-        c = (2 * f - 1 - f % 2) / (2.0 * f)
-        bilinear = np.zeros([height, width])
-        for y in range(height):
-            for x in range(width):
-                value = (1 - abs(y / f - c)) * (1 - abs(x / f - c))
-                bilinear[y, x] = value
-        weights = np.zeros(weights_shape)
-        for i in range(weights_shape[2]):
-            weights[:, :, i, i] = bilinear
-            ''' unknown '''
-        init = tf.constant_initializer(value=weights)
-        return tf.get_variable(
-            'up_filter',
-            shape=weights.shape,
-            dtype=tf.float32,
-            initializer=init)
+        with tf.name_scope('pool(max)_layer'):
+            height = weights_shape[0]
+            width = weights_shape[1]
+            f = ceil(height / 2.0)
+            c = (2 * f - 1 - f % 2) / (2.0 * f)
+            bilinear = np.zeros([height, width])
+            for y in range(height):
+                for x in range(width):
+                    value = (1 - abs(y / f - c)) * (1 - abs(x / f - c))
+                    bilinear[y, x] = value
+            weights = np.zeros(weights_shape)
+            for i in range(weights_shape[2]):
+                weights[:, :, i, i] = bilinear
+                ''' unknown '''
+            init = tf.constant_initializer(value=weights)
+            return tf.get_variable(
+                'up_filter',
+                shape=weights.shape,
+                dtype=tf.float32,
+                initializer=init)
 
     def build(self, input_image, class_number, is_training):
         with tf.name_scope('processing'):
@@ -124,6 +154,7 @@ class Model:
                 #  [b * 0.00390625, g * 0.00390625, r * 0.00390625], axis=3)
                 #  * 1 / 256
                 [b / 255.0, g / 255.0, r / 255.0], axis=3)
+            tf.summary.image('input', input_image, 10)
             #  归一化：1. RBG分别除以255
             #        2. 减平均图像
 
