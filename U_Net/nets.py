@@ -15,9 +15,10 @@ from tensorflow.contrib import layers as tfclayers  # xavier_initializer
 class Model:
     ''' all layers need to be initializer '''
 
-    def __init__(self, dataset_mean_vector):
+    # def __init__(self, dataset_mean_vector):
+    def __init__(self):
         self.epsilon = tf.constant(value=1e-4)
-        self.mean_vector = dataset_mean_vector
+        # self.mean_vector = dataset_mean_vector
 
     def conv(self, bottom, ksize, is_training, name):
         ''' conv layer bn then activation '''
@@ -27,6 +28,7 @@ class Model:
                 shape=ksize,
                 dtype=tf.float32,
                 initializer=tfclayers.xavier_initializer())
+            # xavier_initializer: Var(w) = 2 / (n_in + n_out)
             biases = tf.get_variable(
                 'biases',
                 shape=[ksize[-1]],
@@ -119,12 +121,17 @@ class Model:
         with tf.name_scope('processing'):
             b, g, r = tf.split(input_image, 3, axis=3)
             input_image_ = tf.concat(
-                [b * 0.00390625, g * 0.00390625, r * 0.00390625], axis=3)
+                #  [b * 0.00390625, g * 0.00390625, r * 0.00390625], axis=3)
+                #  * 1 / 256
+                [b / 255.0, g / 255.0, r / 255.0], axis=3)
+            #  归一化：1. RBG分别除以255
+            #        2. 减平均图像
 
 #            input_image_=tf.concat([
 #                    b-self.mean_vector[0],
 #                    g-self.mean_vector[1],
 #                    r-self.mean_vector[2]],axis=3)
+#  #### HF_FCN
         '''
         HF_FCN
         '''
@@ -195,8 +202,10 @@ class Model:
         #
         #        self.softmax_1=tf.nn.softmax(self.new_score_1+self.epsilon)
         #        self.pred_1=tf.argmax(self.softmax_1,axis=3)
+
+#  #### U_Net: no dropout
         '''
-        U_Net : no dropout
+        U_Net: no dropout
         '''
         self.conv_1 = self.conv(
             input_image_,
@@ -256,7 +265,6 @@ class Model:
             ksize=[3, 3, 512, 512],
             is_training=is_training,
             name='conv_10')
-
         self.up_10 = self.upsample(
             self.conv_10,
             shape=self.conv_8.get_shape().as_list(),
@@ -276,7 +284,6 @@ class Model:
             ksize=[3, 3, 256, 256],
             is_training=is_training,
             name='conv_12')
-
         self.up_12 = self.upsample(
             self.conv_12,
             shape=self.conv_6.get_shape().as_list(),
@@ -296,7 +303,6 @@ class Model:
             ksize=[3, 3, 128, 128],
             is_training=is_training,
             name='conv_14')
-
         self.up_14 = self.upsample(
             self.conv_14,
             shape=self.conv_4.get_shape().as_list(),
@@ -316,7 +322,6 @@ class Model:
             ksize=[3, 3, 64, 64],
             is_training=is_training,
             name='conv_16')
-
         self.up_16 = self.upsample(
             self.conv_16,
             shape=self.conv_2.get_shape().as_list(),
@@ -336,7 +341,6 @@ class Model:
             ksize=[3, 3, 32, 32],
             is_training=is_training,
             name='conv_18')
-
         self.new_score_2 = self.conv(
             self.conv_18,
             ksize=[1, 1, 32, class_number],

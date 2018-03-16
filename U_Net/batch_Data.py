@@ -21,7 +21,7 @@ class Data(object):
         self.filenamelist = self.load_txt(image_list_path)
         self.img_num = len(self.filenamelist)
         ''' yong bu dao mean shi gui yi hua '''
-        self.meanvector = [80.834, 82.555, 73.871]  #
+        # self.meanvector = [80.834, 82.555, 73.871]  #
         self.class_number = class_number
         self.batch_offset = 0
         self.batch_offsetforeval = 0
