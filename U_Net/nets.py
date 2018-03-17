@@ -11,7 +11,7 @@ from math import ceil
 import numpy as np
 from tensorflow.contrib import layers as tfclayers  # xavier_initializer
 
-log_dir = r' '
+log_dir = r'C:/WorkSpace/myTF/ISPRS_data_3/log'
 
 
 class Model:
@@ -70,7 +70,7 @@ class Model:
                 return output
 
     def max_pool(self, bottom, name):
-        with tf.name_scope('pool(max)_layer'):
+        with tf.name_scope('pool_max_layer'):
             with tf.variable_scope(name):
                 output = tf.nn.max_pool(
                     bottom,

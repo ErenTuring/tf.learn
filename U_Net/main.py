@@ -76,12 +76,15 @@ def train(loss, learning_rate, learning_rate_decay_steps,
 
 
 def main():
-    dataset_path = r'/home/qiji/Code/Coding/ISPRS_data_3'
-    train_list_path = r'/home/qiji/Code/Coding/ISPRS_data_3/train.txt'
-    valid_list_path = r'/home/qiji/Code/Coding/ISPRS_data_3/valid.txt'
-    # dataset_path = r'C:/WorkSpace/myTF/ISPRS_data_3'
-    # train_list_path = r'C:/WorkSpace/myTF/ISPRS_data_3/train.txt'
-    # valid_list_path = r'C:/WorkSpace/myTF/ISPRS_data_3/valid.txt'
+    # dataset_path = r'/home/qiji/Code/Coding/ISPRS_data_3'
+    # train_list_path = r'/home/qiji/Code/Coding/ISPRS_data_3/train.txt'
+    # valid_list_path = r'/home/qiji/Code/Coding/ISPRS_data_3/valid.txt'
+    # model_path = r'/home/qiji/Code/Coding/ISPRS_data_3/model/model.ckpt'
+    dataset_path = r'C:/WorkSpace/myTF/ISPRS_data_3'
+    train_list_path = r'C:/WorkSpace/myTF/ISPRS_data_3/train.txt'
+    valid_list_path = r'C:/WorkSpace/myTF/ISPRS_data_3/valid.txt'
+    model_path = r'C:/WorkSpace/myTF/ISPRS_data_3/model/model.ckpt'
+
     batch_size = 8
     img_size = 256
     max_iter = 1000  # 40001
@@ -126,10 +129,10 @@ def main():
     init_op = tf.group(tf.global_variables_initializer(),
                        tf.local_variables_initializer())
     # 合并到Summary中
-    merged = tf.merge_all_summaries()
+    merged = tf.summary.merge_all()
     # 选定可视化存储目录
-    writer = tf.train.SummaryWriter(nets.log_dir, sess.graph)
-    
+    train_writer = tf.summary.FileWriter(nets.log_dir, sess.graph)
+
     saver = tf.train.Saver(max_to_keep=1)
     sess.run(init_op)
     for step in range(1, max_iter):
@@ -137,28 +140,31 @@ def main():
         train_imgs, train_labs = dataset_train_param.next_batch(
                                 batch_size=batch_size, flag='train')
         feed_dict = {image: train_imgs, label: train_labs, is_training: True}
-        sess.run(train_op, feed_dict=feed_dict)
+
         if step % 10 == 0:
             train_loss = sess.run(loss, feed_dict=feed_dict)
             print('step : %d, loss : %g' % (step, train_loss))
-        if step % 100 == 0:
-            result = sess.run(merged, feed_dict=feed_dict)
-            writer.add_summary(result, step)
-            valid_imgs, valid_labs = dataset_valid_param.next_batch(
-                batch_size=batch_size, flag='valid')
-            feed_dict = {
-                image: valid_imgs,
-                label: valid_labs,
-                is_training: False
-            }
-            accu = round(sess.run(accuracy, feed_dict=feed_dict), 2)
-            print('Accuracy: %.2f' % accu)
-            saver.save(
-                sess,
-                # save_path=r'C:/WorkSpace/myTF/ISPRS_data_3/model/model.ckpt',
-                save_path=r'/home/qiji/Code/Coding/'
-                          + r'ISPRS_data_3/model/model.ckpt',
-                global_step=step)
+            if step % 50 == 0:
+                summary = sess.run(merged, feed_dict=feed_dict)
+                train_writer.add_summary(summary, step)
+                if step % 100 == 0:
+                    valid_imgs, valid_labs = dataset_valid_param.next_batch(
+                        batch_size=batch_size, flag='valid')
+                    feed_dict = {
+                        image: valid_imgs,
+                        label: valid_labs,
+                        is_training: False
+                    }
+                    accu = round(sess.run(accuracy, feed_dict=feed_dict), 2)
+                    print('Accuracy: %.2f' % accu)
+                    saver.save(
+                        sess,
+                        save_path=model_path,
+                        global_step=step)
+
+        else:
+            sess.run(train_op, feed_dict=feed_dict)
+
     sess.close()
 
 
