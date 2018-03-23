@@ -6,12 +6,13 @@ from tensorflow.contrib import layers as tflayers
 from numpy.random import RandomState
 
 
-#获得一层神经网络边上的权重，并将这个权重的L2 正则化损失加入名称为'losses'的集合里
+# 获得一层神经网络边上的权重，并将这个权重的L2 正则化损失加入名称为'losses'的集合里
 def get_weight(shape, lamada):
     # 生成对应一层的权重变量
     var = tf.Variable(tf.random_normal(shape), dtype=tf.float32)
     tf.add_to_collection('losses', tflayers.l2_regularizer(lamada)(var))
     return var
+
 
 x = tf.placeholder(tf.float32, shape=(None, 2), name='x_input')
 y_ = tf.placeholder(tf.float32, shape=(None, 1), name='y_input')
@@ -50,8 +51,10 @@ loss = tf.add_n(tf.get_collection('losses'))
 
 global_step = tf.Variable(0)
 # 学习率的设置：指数衰减法，参数：初始参数，全局步骤，每训练100轮乘以衰减速度0,96(当staircase=True的时候)
-learning_rate = tf.train.exponential_decay(0.1, global_step, 100, 0.96, staircase=True)
-train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=global_step)
+learning_rate = tf.train.exponential_decay(
+    0.1, global_step, 100, 0.96, staircase=True)
+train_step = tf.train.GradientDescentOptimizer(learning_rate).minimize(
+    loss, global_step=global_step)
 
 rdm = RandomState(1)
 dataset_size = 128
@@ -71,7 +74,7 @@ with tf.Session() as sess:
 
         sess.run(train_step, feed_dict={x: X[start:end], y_: Y[start:end]})
         if i % 1000 == 0:
-            total_loss = sess.run(
-                loss, feed_dict={x: X, y_: Y})
-            print("After %d training_step(s) ,loss on all data is %g" % (i, total_loss))
+            total_loss = sess.run(loss, feed_dict={x: X, y_: Y})
+            print("After %d training_step(s) ,loss on all data is %g" %
+                  (i, total_loss))
             # print sess.run(w1)

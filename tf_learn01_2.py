@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-### 计算图的使用
+# ## 计算图的使用
 
 # a = tf.constant([1.0, 2.0], name='a')
 # b = tf.constant([2.0, 3.0], name='b')
@@ -12,7 +12,7 @@ import tensorflow as tf
 # # 通过a.graph可以查看张量所属的计算图，因为没有特意指定，所以这个计算图应该是默认的计算图
 # print(a.graph is tf.get_default_graph())
 
-### 创建新的计算图
+# ## 创建新的计算图
 g1 = tf.Graph()
 with g1.as_default():
     # 在g1中定义

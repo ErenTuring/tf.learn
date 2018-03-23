@@ -85,7 +85,7 @@ def main():
     valid_list_path = r'C:/WorkSpace/myTF/ISPRS_data_3/valid.txt'
     model_path = r'C:/WorkSpace/myTF/ISPRS_data_3/model/model.ckpt'
 
-    batch_size = 8
+    batch_size = 4  # 8
     img_size = 256
     max_iter = 1000  # 40001
     learning_rate = 1e-3
