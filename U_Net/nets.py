@@ -11,7 +11,7 @@ from math import ceil
 import numpy as np
 from tensorflow.contrib import layers as tfclayers  # xavier_initializer
 
-log_dir = r'C:/WorkSpace/myTF/ISPRS_data_3/log'
+# log_dir = r'C:/WorkSpace/myTF/ISPRS_data_3/log'
 
 
 class Model:
